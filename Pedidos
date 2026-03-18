@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pedido Hortifruti</title>
+
+<style>
+body { font-family: Arial; background:#121212; color:#fff; margin:0;}
+header { background:#1f1f1f; padding:15px; text-align:center; font-size:20px;}
+.container { padding:10px;}
+.card { background:#1e1e1e; border-radius:12px; padding:10px; margin-bottom:15px;}
+.item { display:flex; justify-content:space-between; align-items:center; margin:6px 0;}
+.item input { width:60px;}
+.kg { font-size:12px; color:#aaa;}
+.history { font-size:10px; color:#666;}
+button { margin:3px; padding:6px; border:none; border-radius:6px;}
+.add { background:#00c853; color:#000;}
+.del { background:#ff5252; color:#fff;}
+.top { background:#333; color:#fff;}
+</style>
+</head>
+
+<body>
+
+<header>📦 Pedido Hortifruti</header>
+
+<div style="text-align:center; margin:10px;">
+<button class="top" onclick="gerarPDF()">Gerar PDF</button>
+<button class="top" onclick="limpar()">Limpar</button>
+</div>
+
+<div class="container" id="app"></div>
+
+<script>
+
+let produtos = JSON.parse(localStorage.getItem("produtos")) || {
+
+"Banana Correa":[
+{nome:"Banana nanica",kg:20},
+{nome:"Banana prata",kg:20},
+{nome:"Banana terra",kg:20}
+],
+
+"Benassi":[
+{nome:"Abacate",kg:20},
+{nome:"Abacaxi",kg:10},
+{nome:"Ameixa",kg:9},
+{nome:"Ameixa nacional",kg:6},
+{nome:"Goiaba",kg:6},
+{nome:"Laranja pera",kg:20},
+{nome:"Limão",kg:18},
+{nome:"Mamão formosa",kg:13},
+{nome:"Mamão papaya",kg:10},
+{nome:"Manga palmer",kg:18},
+{nome:"Manga tommy",kg:18},
+{nome:"Maracujá",kg:10},
+{nome:"Melancia baby",kg:10},
+{nome:"Melão amarelo",kg:13},
+{nome:"Tomate",kg:20},
+{nome:"Maçã gala",kg:18},
+{nome:"Maçã fuji",kg:18},
+{nome:"Maçã granny",kg:18},
+{nome:"Maçã red",kg:18},
+{nome:"Pera williams",kg:18},
+{nome:"Coco seco",kg:10}
+],
+
+"Hortimix":[
+{nome:"Abóbora japonesa",kg:30},
+{nome:"Abobrinha italiana",kg:20},
+{nome:"Batata bolinha",kg:2},
+{nome:"Batata doce rosada",kg:20},
+{nome:"Batata",kg:25},
+{nome:"Berinjela",kg:10},
+{nome:"Beterraba",kg:20},
+{nome:"Cenoura",kg:20},
+{nome:"Chuchu",kg:18},
+{nome:"Mandioca",kg:20},
+{nome:"Mandioquinha",kg:10},
+{nome:"Pepino comum",kg:20},
+{nome:"Pepino japonês",kg:20},
+{nome:"Pimentão verde",kg:10},
+{nome:"Pimenta vermelha",kg:null}
+],
+
+"Nakati":[
+"Alface crespa","Alface americana","Alface lisa","Alface mimosa",
+"Alface roxa","Alface bicolor","Agrião","Rúcula","Escarola",
+"Acelga","Brócolis ninja","Couve flor","Couve manteiga",
+"Cebolinha","Coentro","Cheiro verde","Salsão","Salsão industrial",
+"Repolho roxo","Alecrim / Louro","Erva doce"
+],
+
+"Waldemar":[
+"Morango"
+]
+
+};
+
+function salvarProdutos(){
+localStorage.setItem("produtos", JSON.stringify(produtos));
+}
+
+function render(){
+let html="";
+
+for(let f in produtos){
+
+html+=`<div class="card"><h2>${f}</h2>
+<button class="add" onclick="addItem('${f}')">+ Item</button>`;
+
+produtos[f].forEach((p,i)=>{
+
+let nome = typeof p==="string"?p:p.nome;
+let kg = typeof p==="string"?null:p.kg;
+
+let id=f+i;
+let hist=JSON.parse(localStorage.getItem(id))||{};
+
+html+=`
+<div class="item">
+<div>
+${nome}
+<div class="history">${hist.qtd||"-"} | ${hist.data||""}</div>
+</div>
+
+<div>
+<input type="number" value="${hist.qtd||''}" oninput="calc('${id}',${kg})">
+<div class="kg" id="kg_${id}">${kg&&hist.qtd?hist.qtd*kg+"kg":""}</div>
+</div>
+
+<button class="del" onclick="removerItem('${f}',${i})">X</button>
+</div>
+`;
+});
+
+html+=`</div>`;
+}
+
+document.getElementById("app").innerHTML=html;
+}
+
+function calc(id,kg){
+let val=event.target.value;
+
+if(kg){
+document.getElementById("kg_"+id).innerText=val*kg+"kg";
+}
+
+if(val){
+localStorage.setItem(id,JSON.stringify({
+qtd:val,
+data:new Date().toLocaleDateString()
+}));
+}
+}
+
+function addItem(f){
+let nome=prompt("Nome:");
+if(!nome)return;
+
+let kg=prompt("Kg por caixa:");
+
+produtos[f].push(kg?{nome:nome,kg:Number(kg)}:nome);
+
+salvarProdutos();
+render();
+}
+
+function removerItem(f,i){
+if(!confirm("Remover item?"))return;
+produtos[f].splice(i,1);
+salvarProdutos();
+render();
+}
+
+function gerarPDF(){
+
+let texto="PEDIDO HORTIFRUTI\n\n";
+
+for(let f in produtos){
+
+let bloco="";
+
+produtos[f].forEach((p,i)=>{
+let id=f+i;
+let hist=JSON.parse(localStorage.getItem(id));
+
+if(hist){
+let nome=typeof p==="string"?p:p.nome;
+bloco+=`${nome} - ${hist.qtd}\n`;
+}
+});
+
+if(bloco){
+texto+=f+":\n"+bloco+"\n";
+}
+}
+
+let w=window.open("");
+w.document.write("<pre>"+texto+"</pre>");
+w.print();
+}
+
+function limpar(){
+localStorage.clear();
+location.reload();
+}
+
+render();
+
+</script>
+
+</body>
+</html>
