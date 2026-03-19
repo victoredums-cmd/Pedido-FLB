@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HortiPro Management | Final Authority</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #0a0c10;
+            --bg-card: rgba(26, 29, 35, 0.65);
+            --bg-input: #1c1f26;
+            --primary: #00e676;
+            --danger: #ff5252;
+            --text-main: #f8f9fa;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --font: 'Inter', sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            font-family: var(--font); background: var(--bg-main); color: var(--text-main); 
+            margin: 0; padding-bottom: 100px;
+            background-image: radial-gradient(at 0% 0%, rgba(0, 230, 118, 0.05) 0px, transparent 50%),
+                              radial-gradient(at 100% 0%, rgba(0, 230, 118, 0.02) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* --- HEADER --- */
+        header { 
+            padding: 20px; background: rgba(10, 12, 16, 0.8); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        header h1 { margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--primary); }
+
+        .search-container { padding: 15px 20px; }
+        #search { 
+            width: 100%; padding: 14px 18px; border-radius: 14px; border: 1px solid var(--border);
+            background: var(--bg-card); color: white; font-size: 15px; transition: 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+        #search:focus { border-color: var(--primary); outline: none; background: #1c1f26; }
+
+        /* --- LISTAS E CARDS --- */
+        .sup-header { padding: 25px 20px 10px; display: flex; justify-content: space-between; align-items: center; }
+        .sup-name { font-size: 11px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+        .btn-add-item { background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.2); color: var(--primary); font-size: 9px; font-weight: 700; padding: 5px 12px; border-radius: 8px; }
+
+        .add-form { background: var(--bg-card); margin: 0 15px 15px; padding: 20px; border-radius: 16px; border: 1px solid var(--border); display: none; }
+        .add-form.active { display: block; animation: fadeIn 0.3s ease; }
+        .add-form input { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--bg-input); border: 1px solid var(--border); color: white; border-radius: 10px; }
+
+        .item-card {
+            background: var(--bg-card); border-radius: 20px; padding: 20px;
+            margin: 0 15px 12px; border: 1px solid var(--border);
+            display: grid; grid-template-columns: 1fr auto; align-items: center;
+            backdrop-filter: blur(10px); transition: 0.3s ease;
+        }
+        .item-card.has-value { border-color: rgba(0, 230, 118, 0.4); background: rgba(0, 230, 118, 0.05); }
+
+        .item-label { font-size: 16px; font-weight: 600; margin-bottom: 4px; display: block; }
+        .item-history { font-size: 11px; color: var(--text-dim); }
+
+        .qty-input {
+            width: 80px; height: 50px; background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 14px; color: var(--primary); text-align: center; font-size: 22px; font-weight: 700;
+        }
+        .kg-badge { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 6px; text-align: right; height: 14px; }
+
+        /* --- MODAL DE FINALIZAÇÃO (PROFISSIONAL) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 7, 10, 0.85); backdrop-filter: blur(8px); z-index: 2000; display: none;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-card { 
+            background: #1a1d23; padding: 30px; border-radius: 28px; width: 100%; max-width: 400px; 
+            text-align: center; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+        
+        .modal-actions { display: flex; gap: 12px; margin-top: 25px; }
+        .btn-modal { 
+            flex: 1; padding: 16px; border-radius: 16px; border: none; font-weight: 700; font-size: 14px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+            transition: 0.2s;
+        }
+        .btn-pdf { background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-pdf:active { background: rgba(255, 255, 255, 0.15); }
+        .btn-encerrar { background: rgba(255, 82, 82, 0.15); color: var(--danger); border: 1px solid rgba(255, 82, 82, 0.2); }
+        .btn-encerrar:active { background: var(--danger); color: white; }
+
+        /* --- FOOTER E NAV --- */
+        .footer-action { padding: 40px 20px 80px; }
+        .btn-main {
+            width: 100%; background: var(--primary); color: #000; padding: 20px;
+            border-radius: 18px; font-weight: 800; font-size: 16px; border: none;
+            box-shadow: 0 10px 20px rgba(0, 230, 118, 0.2);
+        }
+
+        nav.bottom-nav {
+            position: fixed; bottom: 0; width: 100%; height: 80px;
+            background: rgba(15, 17, 21, 0.95); backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border); display: flex; justify-content: space-around; align-items: center; z-index: 1000;
+        }
+        .nav-item { background: none; border: none; color: var(--text-dim); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .nav-item.active { color: var(--primary); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* PRINT PDF */
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; padding: 0; }
+            table { width: 100%; border-collapse: collapse; color: black; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background: #f4f4f4; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="no-print">
+    <h1>HortiPro Elite v9</h1>
+    <button onclick="if(confirm('Limpar banco de dados?')) {localStorage.clear(); location.reload();}" style="background:none; border:none; color:#334155; font-size:9px;">DATABASE RESET</button>
+</header>
+
+<div class="no-print" id="order-ui">
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Pesquisar produto ou fornecedor..." oninput="filtrar()">
+    </div>
+
+    <div id="view-order" class="tab-content active">
+        <div id="main-list"></div>
+        <div class="footer-action">
+            <button class="btn-main" onclick="openFinalize()">FINALIZAR E PROCESSAR</button>
+        </div>
+    </div>
+
+    <div id="view-history" class="tab-content" style="padding: 20px;">
+        <h2 style="font-size: 18px; margin-bottom: 25px; color: var(--primary);">Histórico de Pedidos</h2>
+        <div id="history-list"></div>
+    </div>
+</div>
+
+<div id="pdf-export" class="print-only" style="display:none;">
+    <h2 id="pdf-h-title">Planilha de Pedido</h2>
+    <table id="pdf-table">
+        <thead>
+            <tr><th>FORNECEDOR</th><th>PRODUTO</th><th>QTD</th><th>TOTAL KG</th></tr>
+        </thead>
+        <tbody id="pdf-body"></tbody>
+    </table>
+</div>
+
+<div class="modal-overlay" id="finish-modal">
+    <div class="modal-card">
+        <div style="font-size: 45px; margin-bottom: 10px;">📦</div>
+        <h2 style="margin: 0; font-size: 22px;">Pedido Pronto!</h2>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 8px;">A planilha foi gerada com sucesso.</p>
+        
+        <div class="modal-actions">
+            <button class="btn-modal btn-pdf" onclick="window.print()">
+                <span style="font-size: 18px;">📄</span> PDF
+            </button>
+            <button class="btn-modal btn-encerrar" onclick="closeDay()">
+                <span style="font-size: 18px;">🛑</span> ENCERRAR
+            </button>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav no-print">
+    <button class="nav-item active" onclick="switchTab('order', this)">PEDIDO</button>
+    <button class="nav-item" onclick="switchTab('history', this)">HISTÓRICO</button>
+</nav>
+
+<script>
+const CATALOGO_INIT = {
+    "Banana Correa": [{n:"Banana nanica", k:20}, {n:"Banana prata", k:20}, {n:"Banana terra", k:20}],
+    "Benassi": [
+        {n:"Abacate", k:20}, {n:"Abacaxi", k:10}, {n:"Ameixa", k:9}, {n:"Goiaba", k:6}, {n:"Laranja pera", k:20}, {n:"Limão", k:18}, 
+        {n:"Mamão formosa", k:13}, {n:"Mamão papaya", k:10}, {n:"Manga palmer", k:18}, {n:"Melancia baby", k:10}, 
+        {n:"Melão amarelo", k:13}, {n:"Tomate", k:20}, {n:"Maçã gala", k:18}, {n:"Maçã fuji", k:18}, {n:"Pera williams", k:18}, {n:"Coco seco", k:10}
+    ],
+    "Hortimix": [
+        {n:"Abóbora japonesa", k:30}, {n:"Abobrinha italiana", k:20}, {n:"Batata doce", k:20}, {n:"Batata", k:25},
+        {n:"Berinjela", k:10}, {n:"Beterraba", k:20}, {n:"Cenoura", k:20}, {n:"Chuchu", k:18}, {n:"Mandioca", k:20},
+        {n:"Pepino japonês", k:20}, {n:"Pimentão verde", k:10}
+    ],
+    "Nakati": ["Alface crespa", "Alface americana", "Alface lisa", "Rúcula", "Escarola", "Acelga", "Brócolis ninja", "Couve flor", "Couve manteiga", "Cebolinha", "Coentro", "Cheiro verde", "Salsão"],
+    "Waldemar": ["Morango"]
+};
+
+let catalogo = JSON.parse(localStorage.getItem("hp9_cat")) || CATALOGO_INIT;
+let pedido = JSON.parse(localStorage.getItem("hp9_ped")) || {};
+let badges = JSON.parse(localStorage.getItem("hp9_bad")) || {};
+let logs = JSON.parse(localStorage.getItem("hp9_log")) || [];
+
+function render() {
+    let html = "";
+    for(let f in catalogo) {
+        html += `
+        <div class="sup-header" data-f="${f.toLowerCase()}">
+            <span class="sup-name">${f}</span>
+            <button class="btn-add-item" onclick="toggleAdd('${f}')">+ ITEM</button>
+        </div>
+        <div id="add-${f.replace(/\s/g,'')}" class="add-form">
+            <input type="text" id="in-n-${f.replace(/\s/g,'')}" placeholder="Nome">
+            <input type="number" id="in-k-${f.replace(/\s/g,'')}" placeholder="Kg/Cx">
+            <button onclick="saveNew('${f}')" style="width:100%; background:var(--primary); border:none; padding:12px; border-radius:10px; font-weight:800;">ADICIONAR</button>
+        </div>`;
+        
+        catalogo[f].forEach((p, i) => {
+            const nome = p.n || p; const kg = p.k || null; const id = f + "_" + i;
+            const q = pedido[id] || ""; const b = badges[id] || {q:"-", d:"-"};
+            html += `
+            <div class="item-card ${q > 0 ? 'has-value' : ''}" data-p="${nome.toLowerCase()}" data-f="${f.toLowerCase()}">
+                <div class="info">
+                    <span class="item-label">${nome}</span>
+                    <span class="item-history">Anterior: <b>${b.q}</b> em ${b.d}</span>
+                </div>
+                <div class="qty-wrap">
+                    <input type="number" class="qty-input" value="${q}" oninput="upd('${id}', ${kg}, this.value, this)">
+                    <div class="kg-badge" id="kg-${id}">${(kg && q) ? (q*kg).toFixed(1)+"kg" : ""}</div>
+                </div>
+            </div>`;
+        });
+    }
+    document.getElementById("main-list").innerHTML = html;
+}
+
+function upd(id, kg, v, el) {
+    if(v > 0) { 
+        pedido[id] = v; el.closest('.item-card').classList.add('has-value');
+        if(kg) document.getElementById("kg-"+id).innerText = (v*kg).toFixed(1)+"kg";
+    } else { 
+        delete pedido[id]; el.closest('.item-card').classList.remove('has-value');
+        document.getElementById("kg-"+id).innerText = "";
+    }
+    localStorage.setItem("hp9_ped", JSON.stringify(pedido));
+}
+
+function openFinalize() {
+    if(!Object.keys(pedido).length) return alert("Pedido Vazio!");
+    let rows = "";
+    for(let id in pedido) {
+        const [f, i] = id.split("_"); const p = catalogo[f][i];
+        rows += `<tr><td>${f}</td><td>${p.n || p}</td><td>${pedido[id]}</td><td>${p.k ? (pedido[id]*p.k).toFixed(1)+'kg' : '-'}</td></tr>`;
+    }
+    document.getElementById("pdf-body").innerHTML = rows;
+    document.getElementById("pdf-h-title").innerText = "Relatório de Pedido - " + new Date().toLocaleDateString();
+    document.getElementById("finish-modal").classList.add("active");
+}
+
+function closeDay() {
+    const d = new Date().toLocaleDateString('pt-BR');
+    let logTxt = "";
+    for(let id in pedido) {
+        const [f, i] = id.split("_"); const p = catalogo[f][i];
+        logTxt += `• ${p.n || p}: ${pedido[id]}\n`;
+        badges[id] = {q: pedido[id], d: d};
+    }
+    logs.push({d: d, t: logTxt});
+    localStorage.setItem("hp9_log", JSON.stringify(logs));
+    localStorage.setItem("hp9_bad", JSON.stringify(badges));
+    pedido = {}; localStorage.removeItem("hp9_ped");
+    document.getElementById("finish-modal").classList.remove("active");
+    render();
+}
+
+function switchTab(t, el) {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('view-'+t).classList.add('active');
+    el.classList.add('active');
+    if(t === 'history') renderHistory();
+}
+
+function renderHistory() {
+    document.getElementById("history-list").innerHTML = logs.slice().reverse().map(l => `
+        <div style="background:var(--bg-card); padding:20px; border-radius:18px; border:1px solid var(--border); margin-bottom:15px; backdrop-filter:blur(10px);">
+            <div style="color:var(--primary); font-weight:800; font-size:14px; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:8px;">${l.d}</div>
+            <pre style="color:var(--text-dim); font-size:13px; font-family:inherit; white-space:pre-wrap; margin:0;">${l.t}</pre>
+        </div>`).join("");
+}
+
+function filtrar() {
+    const b = document.getElementById("search").value.toLowerCase();
+    document.querySelectorAll('.item-card').forEach(c => {
+        const matches = c.getAttribute('data-p').includes(b) || c.getAttribute('data-f').includes(b);
+        c.style.display = matches ? "grid" : "none";
+    });
+}
+
+function toggleAdd(f) { document.getElementById('add-'+f.replace(/\s/g,'')).classList.toggle('active'); }
+function saveNew(f) {
+    const n = document.getElementById('in-n-'+f.replace(/\s/g,'')).value;
+    const k = document.getElementById('in-k-'+f.replace(/\s/g,'')).value;
+    if(!n) return;
+    catalogo[f].push({n: n, k: k ? Number(k) : null});
+    localStorage.setItem("hp9_cat", JSON.stringify(catalogo));
+    render();
+}
+
+render();
+</script>
+</body>
+</html>
